@@ -1,0 +1,13 @@
+sale_date,customer_id,first_name,last_name,email,gender,age_range,signup_date,country,product_id,product_name,category,brand,color,size,catalog_price,cost_price,quantity,original_price,unit_price,discount_applied,discount_percent,discounted,item_total,sale_id,item_id,channel,channel_campaigns
+2025-06-16,1001,Jean,Kouadio,jean.k@email.ci,M,25-35,2024-01-15,CI,5001,T-shirt coton,Basique,Nike,Noir,M,25.00,15.00,2,25.00,22.50,5.00,20,True,45.00,9001,10001,Online,Promo_ete
+2025-06-16,1001,Jean,Kouadio,jean.k@email.ci,M,25-35,2024-01-15,CI,5002,Chaussures sport,Sport,Adidas,Blanc,42,120.00,80.00,1,120.00,110.00,10.00,8.33,True,110.00,9001,10002,Online,Promo_ete
+2025-06-16,1002,Aminata,Diallo,aminata.d@email.ci,F,18-24,2025-02-10,CI,5003,Sac à dos,Accessoire,Samsonite,Gris,Unique,80.00,50.00,1,80.00,75.00,0.00,0,False,75.00,9002,10003,Mobile App,Flash_sale
+2025-06-16,1003,Koffi,Yao,koffi.y@email.ci,M,35-45,2023-11-20,CI,5001,T-shirt coton,Basique,Nike,Noir,M,25.00,15.00,3,25.00,20.00,0.00,0,False,60.00,9003,10004,Online,Standard
+2025-06-16,1004,Fatou,Camara,fatou.c@email.ci,F,25-35,2024-06-01,SN,5004,Robe d'été,Mode,Zara,Rouge,M,45.00,28.00,2,45.00,40.00,5.00,11.11,True,80.00,9004,10005,Website,New_collection
+2025-06-16,1005,Mohamed,Touré,mohamed.t@email.ci,M,30-40,2024-03-05,ML,5005,Casque audio,Électronique,Sony,Noir,Unique,150.00,100.00,1,150.00,135.00,15.00,10,True,135.00,9005,10006,Online,Back_to_school
+2025-06-16,1001,Jean,Kouadio,jean.k@email.ci,M,25-35,2024-01-15,CI,5005,Casque audio,Électronique,Sony,Noir,Unique,150.00,100.00,1,150.00,135.00,0.00,0,False,135.00,9006,10007,Online,Standard
+2025-06-16,1006,Marie,N'Guessan,marie.n@email.ci,F,40-50,2022-09-10,CI,5006,Livre développement personnel,Littérature,Unknown,Multicolore,Unique,20.00,12.00,4,20.00,18.00,0.00,0,False,72.00,9007,10008,Mobile App,Standard
+2025-06-16,1007,Ousmane,Traoré,ousmane.t@email.ci,M,18-24,2025-01-01,ML,5007,Short de sport,Sport,Puma,Bleu,L,30.00,18.00,3,30.00,27.00,3.00,10,True,81.00,9008,10009,Online,Promo_ete
+2025-06-16,1008,Sarah,Koné,sarah.k@email.ci,F,25-35,2024-07-20,CI,5008,Écouteurs sans fil,Électronique,JBL,Blanc,Unique,60.00,40.00,2,60.00,55.00,5.00,8.33,True,110.00,9009,10010,Website,Flash_sale
+
+

@@ -1,0 +1,7 @@
+# Forcer LF pour les fichiers texte
+*.py text eol=lf
+*.ipynb text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.sql text eol=lf
+

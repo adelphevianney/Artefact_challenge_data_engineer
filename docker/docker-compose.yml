@@ -1,0 +1,80 @@
+# =============================================================================
+# docker-compose.yml
+# Challenge Artefact CI - Stagiaire Data Engineer
+# Déploiement PostgreSQL + MinIO (S3 compatible)
+# Version recommandée - Janvier 2026
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL - Base de données principale
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16
+    container_name: artefact-postgres
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      # Scripts d'initialisation (exécutés une seule fois au premier démarrage)
+      - ../docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      
+      # Persistance des données (important pour ne pas tout perdre au redémarrage)
+      - postgres_data:/var/lib/postgresql/data
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # MinIO - Stockage objet S3-compatible (remplace AWS S3 localement)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: artefact-minio
+    restart: unless-stopped
+    
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    
+    ports:
+      - "9000:9000"     # API S3
+      - "9001:9001"     # Console web MinIO
+    
+    command: server /data --console-address ":9001"
+    
+    volumes:
+      - minio_data:/data
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+# ---------------------------------------------------------------------------
+# Volumes persistants
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    name: artefact-postgres-data
+  minio_data:
+    name: artefact-minio-data
+
+# ---------------------------------------------------------------------------
+# Réseau
+# ---------------------------------------------------------------------------
+networks:
+  default:
+    name: artefact-network
