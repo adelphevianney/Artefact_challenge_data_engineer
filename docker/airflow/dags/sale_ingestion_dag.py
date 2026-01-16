@@ -60,9 +60,17 @@ with DAG(
             raise
 
         # 4. Filtrage par date
+        # Normalisation
         df['sale_date'] = pd.to_datetime(df['sale_date'], errors='coerce').dt.date
+
+        # Filtrage incrémental
         target_date = pd.to_datetime(target_date_str, format='%Y%m%d').date()
         df_filtered = df[df['sale_date'] == target_date].copy()
+
+        # Création de la clé date
+        df_filtered['date_id'] = df_filtered['sale_date'].apply(
+            lambda d: int(pd.Timestamp(d).strftime('%Y%m%d'))
+        )
 
         if df_filtered.empty:
             logger.info("Aucune donnée pour cette date")
@@ -105,7 +113,7 @@ with DAG(
             # 2. customers
             cols = ['customer_id', 'first_name', 'last_name', 'email', 'gender',
                     'age_range', 'signup_date', 'country']
-            temp_df = df[cols].replace({pd.NA: None, float('nan'): None})
+            temp_df = df_filtered[cols].replace({pd.NA: None, float('nan'): None})
             customers = temp_df.drop_duplicates(subset=['customer_id']).values.tolist()
 
             cursor.executemany("""
@@ -146,15 +154,16 @@ with DAG(
 
             # 4. orders
             orders = df_filtered[[
-                'sale_id', 'sale_date', 'customer_id', 'channel', 'channel_campaigns'
+                'sale_id', 'sale_date','date_id','customer_id', 'channel', 'channel_campaigns'
             ]].drop_duplicates(subset=['sale_id']).values.tolist()
 
             cursor.executemany("""
                 INSERT INTO sales.orders (
-                    sale_id, sale_date, customer_id, channel, channel_campaigns
-                ) VALUES (%s, %s, %s, %s, %s)
+                    sale_id, sale_date, date_id, customer_id, channel, channel_campaigns
+                ) VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (sale_id) DO UPDATE SET
                     sale_date = EXCLUDED.sale_date,
+                    date_id = EXCLUDED.date_id,
                     customer_id = EXCLUDED.customer_id,
                     channel = EXCLUDED.channel,
                     channel_campaigns = EXCLUDED.channel_campaigns
@@ -202,7 +211,7 @@ with DAG(
                     unit_price = EXCLUDED.unit_price,
                     discount_applied = EXCLUDED.discount_applied,
                     discount_percent = EXCLUDED.discount_percent,
-                    discounted = EXCLUDED.discounted,
+                    discounted = EXCLUDED.discounted
             """, items)
 
             conn.commit()
@@ -217,20 +226,27 @@ with DAG(
 
 
     # Définition de la tâche unique
-    slack_failure_notification = SlackNotifier(
-        slack_conn_id='slack_default',
-        text='DAG {{ dag.dag_id }} a échoué pour la date {{ params.target_date }} !\nErreur : {{ task_instance.xcom_pull(task_ids="ingest_sales_data", key="return_value") }}',
-        channel='#alertes-data',
-        username='AirflowBot',
-        icon_emoji=':rotating_light:'
-    )
+    def slack_failure_callback(context):
+        notifier = SlackNotifier(
+            slack_conn_id='slack_default',
+            text=(
+                ":x: *Échec du DAG*\n"
+                "*DAG* : {{ dag.dag_id }}\n"
+                "*Task* : {{ task_instance.task_id }}\n"
+                "*Execution date* : {{ ds }}\n"
+                "*Erreur* : {{ exception }}"
+            ),
+            channel='#alertes-data',
+        )
+        notifier.notify(context)
+
 
     ingest_task = PythonOperator(
         task_id='ingest_sales_data',
         python_callable=ingest_sales_for_date,
         provide_context=True,
         email_on_failure=True,
-        on_failure_callback=slack_failure_notification,
+        on_failure_callback=slack_failure_callback,
     )
 
     ingest_task

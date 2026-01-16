@@ -8,11 +8,22 @@ x-airflow-common:
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg://airflow:airflow@postgres-airflow/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__WEBSERVER__SECRET_KEY: 'temporary_key_change_me'
+
+    # --- SMTP ---
+    AIRFLOW__SMTP__SMTP_HOST: 'smtp.gmail.com'
+    AIRFLOW__SMTP__SMTP_STARTTLS: 'true'
+    AIRFLOW__SMTP__SMTP_SSL: 'false'
+    AIRFLOW__SMTP__SMTP_PORT: '587'
+    AIRFLOW__SMTP__SMTP_USER: 'fofvianney15@gmail.com'
+    AIRFLOW__SMTP__SMTP_PASSWORD: 'ton_mot_de_passe_app'
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: 'airflow@artefact.local'
+
+    PIP_ADDITIONAL_REQUIREMENTS: psycopg[binary]
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
@@ -41,7 +52,7 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8081:8081"
+      - "8081:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 10s
@@ -56,13 +67,18 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    command: version
-    environment:
-      <<: *airflow-common-env
-      _AIRFLOW_DB_UPGRADE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
-      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create
+        --username ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+        --password ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+        --firstname Admin
+        --lastname User
+        --role Admin
+        --email admin@example.com
+      "
+
 
 volumes:
   postgres-airflow-data:

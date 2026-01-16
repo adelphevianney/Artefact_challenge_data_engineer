@@ -46,11 +46,30 @@ CREATE TABLE sales.products (
 );
 
 -- ---------------------------------------------------------------------------
--- 3. En-tête des commandes
+-- 3. Dimension date
+-- ---------------------------------------------------------------------------
+CREATE TABLE sales.dim_dates (
+    date_id         INTEGER     PRIMARY KEY,         -- YYYYMMDD
+    full_date       DATE        NOT NULL UNIQUE,
+    year            SMALLINT    NOT NULL,
+    month           SMALLINT    NOT NULL,
+    day             SMALLINT    NOT NULL,
+    day_of_week     VARCHAR(10),
+    week_number     SMALLINT,
+    quarter         SMALLINT,
+    is_weekend      BOOLEAN,
+    is_holiday      BOOLEAN     DEFAULT FALSE,
+    created_at      TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- ---------------------------------------------------------------------------
+-- 4. En-tête des commandes
 -- ---------------------------------------------------------------------------
 CREATE TABLE sales.orders (
     sale_id             BIGINT          PRIMARY KEY,
     sale_date           DATE            NOT NULL,
+    date_id             INTEGER         NOT NULL REFERENCES sales.dim_dates(date_id),
     customer_id         BIGINT          NOT NULL REFERENCES sales.customers(customer_id) ON DELETE RESTRICT,
     channel             VARCHAR(50),
     channel_campaigns   VARCHAR(100),
@@ -59,7 +78,7 @@ CREATE TABLE sales.orders (
 );
 
 -- ---------------------------------------------------------------------------
--- 4. Lignes de commande (table de faits principale)
+-- 5. Lignes de commande (table de faits principale)
 -- ---------------------------------------------------------------------------
 CREATE TABLE sales.order_items (
     item_id             BIGINT          PRIMARY KEY,
@@ -84,23 +103,6 @@ CREATE TABLE sales.order_items (
         (discount_applied = 0 AND discount_percent = 0) OR
         (discount_applied > 0 OR discount_percent > 0)
     )
-);
-
--- ---------------------------------------------------------------------------
--- 5. Dimension date
--- ---------------------------------------------------------------------------
-CREATE TABLE sales.dim_dates (
-    date_id         INTEGER     PRIMARY KEY,         -- YYYYMMDD
-    full_date       DATE        NOT NULL UNIQUE,
-    year            SMALLINT    NOT NULL,
-    month           SMALLINT    NOT NULL,
-    day             SMALLINT    NOT NULL,
-    day_of_week     VARCHAR(10),
-    week_number     SMALLINT,
-    quarter         SMALLINT,
-    is_weekend      BOOLEAN,
-    is_holiday      BOOLEAN     DEFAULT FALSE,
-    created_at      TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ---------------------------------------------------------------------------
