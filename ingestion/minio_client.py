@@ -38,6 +38,10 @@ def read_sales_file(date_str: str) -> pd.DataFrame:
         target_date = pd.to_datetime(date_str, format="%Y%m%d").date()
 
         filtered = df[df['sale_date'] == target_date].copy()
+
+        filtered['date_id'] = filtered['sale_date'].apply(
+            lambda d: int(pd.Timestamp(d).strftime('%Y%m%d'))
+        )
         logger.info(f"{len(filtered)} lignes trouvées pour la date {target_date}")
 
         return filtered

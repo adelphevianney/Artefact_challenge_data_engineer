@@ -99,17 +99,18 @@ def upsert_orders(conn, df: pd.DataFrame):
     # On dédoublonne sur sale_id
     # On prend la première occurrence par sale_id (les autres champs devraient être identiques)
     cols = [
-        'sale_id', 'sale_date', 'customer_id',
+        'sale_id', 'sale_date', 'date_id', 'customer_id',
         'channel', 'channel_campaigns'
     ]
     orders = df[cols].drop_duplicates(subset=['sale_id']).values.tolist()
 
     query = f"""
         INSERT INTO {SCHEMA}.orders (
-            sale_id, sale_date, customer_id, channel, channel_campaigns
-        ) VALUES (%s, %s, %s, %s, %s)
+            sale_id, sale_date, date_id, customer_id, channel, channel_campaigns
+        ) VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (sale_id) DO UPDATE SET
             sale_date          = EXCLUDED.sale_date,
+            date_id          = EXCLUDED.date_id,
             customer_id        = EXCLUDED.customer_id,
             channel            = EXCLUDED.channel,
             channel_campaigns  = EXCLUDED.channel_campaigns
