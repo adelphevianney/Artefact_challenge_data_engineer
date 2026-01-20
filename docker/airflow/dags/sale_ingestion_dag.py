@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'vianney',
     'depends_on_past': False,
-    'retries': 3,
+    'retries': 1,
     'retry_delay': timedelta(minutes=5),  # Attendre 5 minutes entre chaque retry
     'retry_exponential_backoff': True,    # Augmente le délai progressivement
     'max_retry_delay': timedelta(hours=1), # Délai maximum entre retries
@@ -48,7 +48,7 @@ with DAG(
         pg_hook = PostgresHook(postgres_conn_id='postgres_ecommerce')  # Connexion Postgres
 
         # 3. Lecture depuis MinIO
-        bucket_name = 'folder_source'
+        bucket_name = 'foldersource'
         object_key = 'fashion_store_sales.csv'  # ← nom exact de ton fichier
 
         try:

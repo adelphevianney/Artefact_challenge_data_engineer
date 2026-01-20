@@ -9,10 +9,11 @@ x-airflow-common:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
-    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__FERNET_KEY: 'XJ0ThgmhI4dAzshOLLM4rHecr-aywdouUqTxjYN89io='
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__WEBSERVER__SECRET_KEY: 'temporary_key_change_me'
+
 
     # --- SMTP ---
     AIRFLOW__SMTP__SMTP_HOST: 'smtp.gmail.com'
@@ -23,7 +24,10 @@ x-airflow-common:
     AIRFLOW__SMTP__SMTP_PASSWORD: 'ton_mot_de_passe_app'
     AIRFLOW__SMTP__SMTP_MAIL_FROM: 'airflow@artefact.local'
 
-    PIP_ADDITIONAL_REQUIREMENTS: psycopg[binary]
+    PIP_ADDITIONAL_REQUIREMENTS: >
+      psycopg[binary]
+      apache-airflow-providers-amazon
+
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs

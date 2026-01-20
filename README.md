@@ -19,7 +19,10 @@ docker exec -it artefact-postgres psql -U postgres -d ecommerce
 \dt
 
 # syntaxe pour faire une requete directement dans l'invite de commande
-docker compose exec postgres psql -U postgres -d ecommerce -c " ici tu mets ta requete SQL"
+docker compose exec postgres psql -U postgres -d ecommerce -c " ici tu mets ta requete SQL" 
+
+# insertion direct depuis le script python
+python ../ingestion/main.py 20251006
 
 ````commandline
 ingestion/
@@ -95,4 +98,28 @@ docker exec -it docker-airflow-webserver-1 airflow users create `
   --lastname User `
   --role Admin `
   --email admin@example.com
+
+# connexion minio
+
+docker exec -it docker-airflow-webserver-1 airflow connections add minio_default `
+    --conn-type aws `
+    --conn-login minioadmin `
+    --conn-password minioadminsecret `
+    --conn-extra {"endpoint_url":"http://minio:9001"}
+
+# connexion postgres
+
+docker exec -it docker-airflow-webserver-1 airflow connections add postgres_ecommerce `
+    --conn-type postgres `
+    --conn-host postgres-airflow `
+    --conn-schema airflow `
+    --conn-login airflow `
+    --conn-password airflow `
+    --conn-port 5432
+
+# Lister les DAG runs
+docker exec -it docker-airflow-webserver-1 airflow dags list-runs -d sale_ingestion_dag
+
+# Stopper une run spécifique en la marquant comme failed
+docker exec -it docker-airflow-webserver-1 airflow tasks clear sale_ingestion_dag --run-id run_id --all-tasks
 
