@@ -17,9 +17,6 @@ default_args = {
     'retry_delay': timedelta(minutes=5),  # Attendre 5 minutes entre chaque retry
     'retry_exponential_backoff': True,    # Augmente le délai progressivement
     'max_retry_delay': timedelta(hours=1), # Délai maximum entre retries
-    'email': ['fofvianney15@gmail.com'],          # ← ton email
-    'email_on_failure': True,                  # Envoie un email si échec définitif
-    'email_on_retry': False,                    #  Email à chaque retry
 }
 
 with DAG(
@@ -245,8 +242,5 @@ with DAG(
         task_id='ingest_sales_data',
         python_callable=ingest_sales_for_date,
         provide_context=True,
-        email_on_failure=True,
-        on_failure_callback=slack_failure_callback,
+        email_on_failure=False,
     )
-
-    ingest_task
