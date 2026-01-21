@@ -1,39 +1,47 @@
 # docker-compose-airflow.yml
 # Artefact Challenge - Déploiement Airflow 3.x local
 
-x-airflow-common:
-  &airflow-common
+x-airflow-common: &airflow-common
   image: apache/airflow:3.0.1
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
-    AIRFLOW__CORE__ENABLE_CONN_TEST: "True"
-    AIRFLOW__CORE__FERNET_KEY: ${FRENET}
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+
+    # Connexion DB Airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
+
+    AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__WEBSERVER__SECRET_KEY: ${WEBSERVER_SECRET_KEY}
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager #garder le moyen de connexion à l'ui de la version précédente qui est moins contraignant
+    AIRFLOW__API__BASE_URL: http://airflow-api:8080 #pour permettre au sheduler de voir l'api
 
-    # Connexions Airflow via variables d'environnement
-    AIRFLOW_CONN_MINIO_DEFAULT: 'aws://minioadmin:minioadminsecret@?endpoint_url=http://artefact-minio:9000&region_name=us-east-1'
-    AIRFLOW_CONN_POSTGRES_ECOMMERCE: 'postgresql://postgres:mysecretpassword123@artefact-postgres:5432/postgres_ecommerce'
+    # Connexions Airflow (utilisées dans les DAGs)
+    AIRFLOW_CONN_MINIO_DEFAULT: aws://minioadmin:secretminio@?endpoint_url=http://artefact-minio:9000&region_name=us-east-1
+    AIRFLOW_CONN_POSTGRES_ECOMMERCE: postgresql+psycopg://postgres:secretpostgres@artefact-postgres:5432/postgres_ecommerce
 
-    # Airflow 3.x utilise Python 3.12 par défaut
+    # Paquets Python à installer automatiquement
     PIP_ADDITIONAL_REQUIREMENTS: >
-      psycopg[binary]
+      psycopg2-binary
       apache-airflow-providers-amazon
+      apache-airflow-providers-fab
 
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/plugins:/opt/airflow/plugins
+
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     postgres-airflow:
       condition: service_healthy
 
+
 services:
-  # Base de données pour les métadonnées Airflow (OBLIGATOIRE)
+
+  # -------------------------------
+  # PostgreSQL - Métadonnées Airflow
+  # -------------------------------
   postgres-airflow:
     image: postgres:16
     container_name: airflow-metadata-db
@@ -46,45 +54,50 @@ services:
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
+      timeout: 5s
       retries: 5
     restart: always
+    networks:
+      - default
 
+
+  # -------------------------------
+  # Initialisation Airflow 3.x (DB + utilisateur admin)
+  # -------------------------------
   airflow-init:
     <<: *airflow-common
     container_name: airflow-init
     entrypoint: /bin/bash
-    command: >
-      -c "
-      if [ ! -f /opt/airflow/.airflow_initialized ]; then
-        airflow db migrate &&
-        airflow users create
-          --username airflow
-          --password airflow
-          --firstname Admin
-          --lastname User
-          --role Admin
-          --email admin@example.com &&
-        touch /opt/airflow/.airflow_initialized &&
-        echo 'Airflow initialisé avec succès!'
-      else
-        echo 'Airflow déjà initialisé, passage de l''initialisation'
-      fi
-      "
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - airflow-init-flag:/opt/airflow
-    restart: "no"
+    command:
+      - -c
+      - airflow db migrate  # redondant mais explicite et sans risque
+    environment:
+      <<: *airflow-common-env
+      # Initialisation automatique Airflow 3.x
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: "${_AIRFLOW_WWW_USER_USERNAME:-airflow}"
+      _AIRFLOW_WWW_USER_PASSWORD: "${_AIRFLOW_WWW_USER_PASSWORD:-airflow}"
+      _AIRFLOW_WWW_USER_ROLE: Admin
+      _AIRFLOW_WWW_USER_EMAIL: admin@example.com
+      _AIRFLOW_WWW_USER_FIRSTNAME: Admin
+      _AIRFLOW_WWW_USER_LASTNAME: User
+    restart: on-failure
+    networks:
+      - default
 
-  airflow-webserver:
+
+  # -------------------------------
+  # Airflow API Server (anciennement webserver)
+  # -------------------------------
+  airflow-api:
     <<: *airflow-common
-    container_name: airflow-webserver
-    command: webserver
+    container_name: airflow-api
+    command: api-server
     ports:
       - "8081:8080"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/api/v2/version" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -92,7 +105,13 @@ services:
     depends_on:
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - default
 
+
+  # -------------------------------
+  # Airflow Scheduler
+  # -------------------------------
   airflow-scheduler:
     <<: *airflow-common
     container_name: airflow-scheduler
@@ -101,20 +120,15 @@ services:
     depends_on:
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - default
 
-  # Optionnel mais recommandé pour Airflow 3.x : Triggerer pour les deferrable operators
-  airflow-triggerer:
-    <<: *airflow-common
-    container_name: airflow-triggerer
-    command: triggerer
-    restart: always
-    depends_on:
-      airflow-init:
-        condition: service_completed_successfully
 
+# -------------------------------
+# Volumes & Network
+# -------------------------------
 volumes:
   postgres-airflow-data:
-  airflow-init-flag:
 
 networks:
   default:

@@ -3,7 +3,6 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook  # Compatible MinIO
-from airflow.providers.slack.notifications.slack_notifier import SlackNotifier #provider slack pour l'alerte e-mail
 import pandas as pd
 from io import BytesIO
 import logging
@@ -23,13 +22,9 @@ with DAG(
         dag_id='sales_ingestion_incremental',
         default_args=default_args,
         description='Ingestion incrémentale des ventes e-commerce (Artefact Challenge)',
-        schedule_interval=None,
         start_date=datetime(2025, 1, 1),
         catchup=False,
-        tags=['ecommerce', 'ingestion', 'artefact-challenge'],
-        params={
-            'target_date': '20250616'  # Date par défaut, modifiable lors du trigger
-        }
+
 ) as dag:
     def ingest_sales_for_date(**context):
         """Tâche principale : ingestion pour une date donnée"""
@@ -167,22 +162,14 @@ with DAG(
             """, orders)
 
             # 5. order_items
-            temp_df = df.copy()
+            temp_df = df_filtered.copy()  # Correction : df_filtered au lieu de df pour ingérer seulement les données filtrées
 
             # --- NETTOYAGE DU POURCENTAGE ---
             if temp_df['discount_percent'].dtype == 'object':
-                """
-                temp_df['discount_percent'] = (
-                    temp_df['discount_percent']
-                    .str.replace('%', '', regex=False)
-                    .astype(float)
-                )
-                """
                 temp_df['discount_percent'] = pd.to_numeric(
                     temp_df['discount_percent'].str.replace('%', '', regex=False),
                     errors='coerce'
                 )
-
 
             temp_df['discount_percent'] = temp_df['discount_percent'].fillna(0.0)
             temp_df['discounted'] = temp_df['discounted'].astype(bool)
@@ -199,7 +186,7 @@ with DAG(
                 INSERT INTO sales.order_items (
                     item_id, sale_id, product_id, quantity, original_price,
                     unit_price, discount_applied, discount_percent, discounted
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (item_id) DO UPDATE SET
                     sale_id = EXCLUDED.sale_id,
                     product_id = EXCLUDED.product_id,
@@ -221,26 +208,8 @@ with DAG(
         finally:
             conn.close()
 
-
-    # Définition de la tâche unique
-    def slack_failure_callback(context):
-        notifier = SlackNotifier(
-            slack_conn_id='slack_default',
-            text=(
-                ":x: *Échec du DAG*\n"
-                "*DAG* : {{ dag.dag_id }}\n"
-                "*Task* : {{ task_instance.task_id }}\n"
-                "*Execution date* : {{ ds }}\n"
-                "*Erreur* : {{ exception }}"
-            ),
-            channel='#alertes-data',
-        )
-        notifier.notify(context)
-
-
     ingest_task = PythonOperator(
         task_id='ingest_sales_data',
         python_callable=ingest_sales_for_date,
-        provide_context=True,
         email_on_failure=False,
     )
