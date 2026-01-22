@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.env
 .venv
 venv/
 
@@ -11,10 +10,10 @@ venv/
 .idea/
 
 # Data (si volumineux ou sensible)
-data/*.csv
+
 
 #variables environnement
-docker/.env
+
 
 # Notebooks checkpoints
 .ipynb_checkpoints/

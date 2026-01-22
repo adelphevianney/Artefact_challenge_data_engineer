@@ -3,12 +3,12 @@ import os
 from dotenv import load_dotenv
 
 # Charger le fichier .env
-load_dotenv("../docker/.env")
+load_dotenv(".env")
 
 # Récupérer les variables
-access_key = os.getenv("ACCESS_KEY")
-secret_key = os.getenv("SECRET_KEY")
-password = os.getenv("PASSWORD")
+access_key = os.getenv("MINIO_ROOT_USER")
+secret_key = os.getenv("MINIO_ROOT_PASSWORD")
+password = os.getenv("POSTGRES_PASSWORD")
 
 # Configuration MinIO
 MINIO = {

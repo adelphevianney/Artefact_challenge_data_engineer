@@ -7,10 +7,10 @@ from logger import setup_logger
 
 logger = setup_logger(__name__)
 # Charger le fichier .env
-load_dotenv("../docker/.env")
+load_dotenv(".env")
 
 # Récupérer les variables
-password = os.getenv("PASSWORD")
+password = os.getenv("POSTGRES_PASSWORD")
 
 
 def get_connection():
