@@ -175,6 +175,8 @@ docker-compose logs -f minio
   * utilisateur : `minioadmin`
   * mot de passe : `secretminio`
 
+il faut créer un bucket ici "foldersource" et y upload le fichier de données ici "fashion_store_sales.csv" présent dans le dossier  data/
+
 ### PostgreSQL
 
 ```bash
