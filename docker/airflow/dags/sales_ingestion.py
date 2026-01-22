@@ -13,8 +13,8 @@ default_args = {
 }
 
 @dag(
-    dag_id="sales_ingestion_modulaire",
-    description="Ingestion incrémentale idempotente générique et modulaire",
+    dag_id="sales_ingestion_semi-modulaire",
+    description="Ingestion incrémentale idempotente générique semi-modulaire",
     start_date=datetime(2025, 1, 1),
     catchup=False,
     default_args=default_args,
