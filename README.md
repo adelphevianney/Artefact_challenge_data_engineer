@@ -89,7 +89,9 @@ Artefact_project/
 │
 ├── .gitattributes
 ├── .gitignore
+└── requirements.txt
 └── READ_ME.md
+
 ```
 
 ---
@@ -102,11 +104,26 @@ Cette partie décrit la **mise en place de l’infrastructure de stockage et de 
 
 ## 5. Prérequis techniques
 
-* Docker ≥ 20
-* Docker Compose ≥ 2
-* Python ≥ 3.9
-* Git
+## Installation des dépendances Python
 
+Le projet utilise un fichier `requirements.txt` qui liste toutes les dépendances nécessaires (Airflow inclus, providers, pandas, etc.).
+
+### 1. Méthode recommandée (dans un environnement virtuel)
+
+```bash
+# 1. Créer et activer un environnement virtuel (fortement recommandé)
+python -m venv .venv
+
+# Sous Linux / macOS
+source .venv/bin/activate
+
+# Sous Windows (PowerShell ou CMD)
+.venv\Scripts\activate
+
+# 2. Installer toutes les dépendances d'un coup
+pip install -r requirements.txt
+
+```
 ---
 
 ## 6. Déploiement de l’infrastructure
